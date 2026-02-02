@@ -1,5 +1,5 @@
 
-This repository provides a fully automated setup for deploying a **GPU-accelerated LLM (vLLM) cluster** using **Terraform** for infrastructure provisioning and **Ansible** for software deployment. Supports **OpenStack, AWS, Azure, GCP, or on-premises Linux nodes**.
+This repository provides a fully automated setup for deploying a **GPU accelerated LLM (vLLM) cluster** using **Terraform** for infrastructure provisioning and **Ansible** for software deployment. Supports **OpenStack, AWS, Azure, GCP, or on-premises Linux nodes**.
 
 ---
 
