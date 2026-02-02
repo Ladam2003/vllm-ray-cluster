@@ -8,7 +8,7 @@ variable "cloud_provider" {
 }
 
 variable "project_prefix" {
-  description = "Projekt prefix name"
+  description = "Project prefix name"
   type        = string
   default     = "myproject"
 }
@@ -90,4 +90,5 @@ variable "keypair_name" {
   type        = string
   default     = "default_sshkey"
 }
+
 
