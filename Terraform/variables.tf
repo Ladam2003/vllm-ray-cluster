@@ -1,53 +1,53 @@
 # ------------------------------
-# Felhő és projekt beállítások
+# Cloud & project settings
 # ------------------------------
 variable "cloud_provider" {
-  description = "Választott felhő: openstack, aws, azure, gcp, onprem"
+  description = "Choose platform: openstack, aws, azure, gcp, onprem"
   type        = string
   default     = "openstack"
 }
 
 variable "project_prefix" {
-  description = "Projekt neve előtagként"
+  description = "Projekt prefix name"
   type        = string
   default     = "myproject"
 }
 
 variable "user_name" {
-  description = "Felhasználó neve, ami a resource-ok nevében szerepel"
+  description = "User name, which will be used on resources name "
   type        = string
   default     = "user"
 }
 
 # ------------------------------
-# Compute / VM beállítások
+# Compute / VM setting
 # ------------------------------
 variable "bastion_ip" {
-  description = "Ha üres, dinamikus IP-t kérünk"
+  description = "If its clear, we get dynamic IP"
   type        = string
   default     = ""
 }
 
 variable "worker_count" {
-  description = "Worker VM-ek száma"
+  description = "Worker VM counter"
   type        = number
   default     = 1
 }
 
 variable "image_name" {
-  description = "VM image neve"
+  description = "VM image name"
   type        = string
   default     = ""
 }
 
 variable "flavor_name" {
-  description = "VM típus/flavor"
+  description = "VM flavor"
   type        = string
   default     = ""
 }
 
 variable "volume_size" {
-  description = "Root volume mérete GB-ban"
+  description = "Root volume size in GB"
   type        = number
   default     = 50
 }
@@ -56,13 +56,13 @@ variable "volume_size" {
 # Network
 # ------------------------------
 variable "private_network" {
-  description = "Privát hálózat neve vagy ID"
+  description = "Private network name or ID"
   type        = string
   default     = ""
 }
 
 variable "external_network" {
-  description = "Publikus hálózat neve vagy ID"
+  description = "Public network name or ID"
   type        = string
   default     = ""
 }
@@ -71,13 +71,13 @@ variable "external_network" {
 # Security
 # ------------------------------
 variable "allowed_cidr" {
-  description = "Engedélyezett CIDR a belső forgalomhoz"
+  description = "Allowed CIDR on inside routing"
   type        = string
   default     = "192.168.0.0/24"
 }
 
 variable "allowed_ports" {
-  description = "Publikus portok a bastionhoz"
+  description = "Public ports for bastion server"
   type        = list(number)
   default     = [22, 8000]
 }
@@ -86,7 +86,8 @@ variable "allowed_ports" {
 # SSH
 # ------------------------------
 variable "keypair_name" {
-  description = "SSH keypair neve"
+  description = "SSH keypair name"
   type        = string
   default     = "default_sshkey"
 }
+
