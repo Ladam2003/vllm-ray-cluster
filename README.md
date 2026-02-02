@@ -149,19 +149,19 @@ This repository provides a fully automated setup for deploying a **GPU accelerat
 | **Apply** | `terraform apply` |
 
 ### Deployment (Ansible)
-1. Setup environment (Docker, Drivers, etc.)
+1. Setup environment (Docker, Drivers, etc.): 
 ansible-playbook -i inventory.ini playbooks/1_setup_environment.yml
 
-2. Build vLLM Docker image
+2. Build vLLM Docker image: 
 ansible-playbook -i inventory.ini playbooks/2_build_vllm_image.yml
 
-3. Start Ray cluster (Head & Workers)
+3. Start Ray cluster (Head & Workers): 
 ansible-playbook -i inventory.ini playbooks/3_start_ray_cluster.yml
 
-4. Run model and API server
+4. Run model and API server: 
 ansible-playbook -i inventory.ini playbooks/4_run_model.yml -e model_id="MODEL_NAME"
 
-5. Stop model gracefully
+5. Stop model gracefully: 
 ansible-playbook -i inventory.ini playbooks/5_stop_model.yml
 
 ### Testing API
