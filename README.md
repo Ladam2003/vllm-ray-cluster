@@ -174,7 +174,7 @@ curl -X POST "http://BASTION_IP:8000/v1/chat/completions" \
 
   
 - BASTION_IP: Public IP of Bastion node
-- MODEL_NAME: Model used in Ansible variable`
+- MODEL_NAME: Model used in Ansible variable
 
 ### Notes & Best Practices
  - GPU Requirements: At least 1 GPU per worker; higher-end recommended
