@@ -148,7 +148,7 @@ This repository provides a fully automated setup for deploying a **GPU accelerat
 | **Plan** | `terraform plan` |
 | **Apply** | `terraform apply` |
 
-### 🤖 Deployment (Ansible)
+### Deployment (Ansible)
 1. Setup environment (Docker, Drivers, etc.)
 ansible-playbook -i inventory.ini playbooks/1_setup_environment.yml
 
