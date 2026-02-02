@@ -4,7 +4,7 @@ resource "openstack_networking_secgroup_v2" "secgroup" {
   description = "Base security group"
 }
 
-# ICMP / TCP / UDP belső
+# ICMP / TCP / UDP ingress
 resource "openstack_networking_secgroup_rule_v2" "internal_rules" {
   count             = var.cloud_provider == "openstack" ? 3 : 0
   direction         = "ingress"
@@ -17,7 +17,7 @@ resource "openstack_networking_secgroup_rule_v2" "internal_rules" {
   port_range_max = count.index == 0 ? null : 65535
 }
 
-# Publikus portok
+# Public ports
 resource "openstack_networking_secgroup_rule_v2" "public_ports" {
   count             = var.cloud_provider == "openstack" ? length(var.allowed_ports) : 0
   direction         = "ingress"
@@ -28,3 +28,4 @@ resource "openstack_networking_secgroup_rule_v2" "public_ports" {
   remote_ip_prefix  = "0.0.0.0/0"
   security_group_id = openstack_networking_secgroup_v2.secgroup.id
 }
+
