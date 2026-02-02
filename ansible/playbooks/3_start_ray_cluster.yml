@@ -5,7 +5,7 @@
   vars_files:
     - all.yml
   vars:
-    ray_head_ip: "192.168.0.140"   # Állítsd a bastion / head node IP-t
+    ray_head_ip: "192.168.0.140"   # Set to bastion / head node IP
     ray_port: "6379"
   tasks:
     - name: Stop and remove any old ray containers
@@ -60,3 +60,4 @@
       when: inventory_hostname in groups['bastion']
       debug:
         msg: "{{ ray_output.stdout }}"
+
