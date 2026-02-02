@@ -141,17 +141,27 @@ This repository provides a fully automated setup for deploying a **GPU accelerat
 
 ## Typical Workflow
 
-### Terraform
-terraform init
-terraform plan
-terraform apply
+### Infrastructure (Terraform)
+| Step | Command |
+| :--- | :--- |
+| **Initialize** | `terraform init` |
+| **Plan** | `terraform plan` |
+| **Apply** | `terraform apply` |
 
-### Ansible
-
+### 🤖 Deployment (Ansible)
+1. Setup environment (Docker, Drivers, etc.)
 ansible-playbook -i inventory.ini playbooks/1_setup_environment.yml
+
+2. Build vLLM Docker image
 ansible-playbook -i inventory.ini playbooks/2_build_vllm_image.yml
+
+3. Start Ray cluster (Head & Workers)
 ansible-playbook -i inventory.ini playbooks/3_start_ray_cluster.yml
+
+4. Run model and API server
 ansible-playbook -i inventory.ini playbooks/4_run_model.yml -e model_id="MODEL_NAME"
+
+5. Stop model gracefully
 ansible-playbook -i inventory.ini playbooks/5_stop_model.yml
 
 ### Testing API
@@ -167,11 +177,11 @@ curl -X POST "http://BASTION_IP:8000/v1/chat/completions" \
 - MODEL_NAME: Model used in Ansible variable`
 
 ### Notes & Best Practices
-- GPU Requirements: At least 1 GPU per worker; higher-end recommended
-- Tensor Parallelism: Increase for multiple nodes
-- Private vs Public IPs: Bastion is public; workers are private
-- SSH: Access workers only via Bastion (ProxyJump)
-- Model Storage: /models/models for models, /models/hf-cache for cache
-- On-Premises: Set cloud_provider = "onprem" and manually provide host IPs
-- Logging: /var/log/vllm.log inside container 
+ - GPU Requirements: At least 1 GPU per worker; higher-end recommended
+ - Tensor Parallelism: Increase for multiple nodes
+ - Private vs Public IPs: Bastion is public; workers are private
+ - SSH: Access workers only via Bastion (ProxyJump)
+ - Model Storage: /models/models for models, /models/hf-cache for cache
+ - On-Premises: Set cloud_provider = "onprem" and manually provide host IPs
+ - Logging: /var/log/vllm.log inside container 
 
