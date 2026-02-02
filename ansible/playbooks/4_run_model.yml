@@ -82,9 +82,9 @@
     - name: FAIL if vLLM did not start
       fail:
         msg: |
-          A modell NEM indult el (vLLM process nincs futásban).
-          Valószínű ok: 1 GPU nem elegendő / túl alacsony VRAM / rossz modell-architektúra vLLM-hez.
-          Tipp: növeld a tensor parallel értékét (több node), vagy válts kisebb modellre.
+          The modell doesn't running (vLLM process is not in running).
+          Reason: 1 GPU is not enough / to low VRAM / bad modell-architecture for vLLM.
+          Guess: Improvetensor parallel values (more node), or switch to a less effortless model.
       when: vllm_ps.rc != 0
 
     - name: Show access URL
@@ -94,3 +94,4 @@
           API endpoint: http://{{ public_ip.stdout }}:{{ api_port }}/v1/chat/completions
           Log nézés: docker exec -it {{ ray_head_container }} bash tail -f /var/log/vllm.log
       when: vllm_ps.rc == 0
+
