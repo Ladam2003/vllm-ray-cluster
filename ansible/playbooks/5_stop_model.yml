@@ -1,0 +1,25 @@
+---
+- name: Stop running vLLM model on ray-head
+  hosts: bastion
+  become: yes
+  vars_files:
+    - all.yml
+  vars:
+    ray_head_container: "ray-head"
+  tasks:
+    - name: Stop vLLM model server (if running)
+      shell: docker exec {{ ray_head_container }} pkill -f vllm.entrypoints.openai.api_server || true
+      args:
+        executable: /bin/bash
+
+    - name: Wait a moment for cleanup
+      pause:
+        seconds: 2
+
+    - name: Confirm no vLLM process is running
+      shell: docker exec {{ ray_head_container }} pgrep -f vllm.entrypoints.openai.api_server || echo "No model running"
+      register: vllm_status
+      changed_when: false
+
+    - debug:
+        msg: "Modell leállítva. Státusz: {{ vllm_status.stdout }}"

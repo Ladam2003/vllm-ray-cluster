@@ -1,0 +1,8 @@
+---
+# Globális változók minden host-ra
+hf_token: "YOUR_HUGGINGFACE_TOKEN"    # HuggingFace API token
+cuda_version: "12.1"                  # Telepítendő CUDA verzió
+docker_version: "latest"              # Docker verzió (latest ajánlott)
+vllm_version: "0.6.3.post1"          # vLLM verzió
+ray_version: "2.9.3"                  # Ray verzió
+model_id: "huggingface-model/repo"    # Letöltendő modell

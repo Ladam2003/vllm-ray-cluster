@@ -1,0 +1,42 @@
+---
+- name: Clean and Rebuild vLLM Docker image on all nodes
+  hosts: all
+  become: yes
+  vars_files:
+    - all.yml
+  tasks:
+    - name: Stop any running leftover containers
+      shell: docker ps -aq | xargs -r docker stop
+      ignore_errors: true
+
+    - name: Remove any stopped containers
+      shell: docker ps -aq | xargs -r docker rm
+      ignore_errors: true
+
+    - name: Remove old vllm-node image if exists
+      shell: docker images -q vllm-node:latest | xargs -r docker rmi -f
+      ignore_errors: true
+
+    - name: Verify image removal
+      shell: docker images | grep vllm-node || true
+      register: img_check
+      changed_when: false
+
+    - debug: msg="Image state before build: {{ img_check.stdout }}"
+
+    - name: Copy Dockerfile to node
+      copy:
+        src: ../templates/Dockerfile.vllm
+        dest: /tmp/Dockerfile.vllm
+
+    - name: Build fresh vLLM Docker image
+      command: docker build --no-cache -t vllm-node:latest -f /tmp/Dockerfile.vllm /tmp
+      args:
+        chdir: /tmp
+      register: build_output
+
+    - debug:
+        var: build_output.stdout_lines
+
+    - debug:
+        msg: "vLLM Docker image successfully built on {{ inventory_hostname }}"

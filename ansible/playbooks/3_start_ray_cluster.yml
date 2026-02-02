@@ -1,0 +1,62 @@
+---
+- name: Start Ray Cluster (Dockerized)
+  hosts: all
+  become: yes
+  vars_files:
+    - all.yml
+  vars:
+    ray_head_ip: "192.168.0.140"   # Állítsd a bastion / head node IP-t
+    ray_port: "6379"
+  tasks:
+    - name: Stop and remove any old ray containers
+      shell: docker rm -f ray-head ray-worker-{{ inventory_hostname }} || true
+      ignore_errors: yes
+
+    - name: Start Ray Head container (only on bastion)
+      when: inventory_hostname in groups['bastion']
+      shell: |
+        docker run -d --gpus all --network host --ipc=host \
+        -v /models:/models \
+        --name ray-head \
+        vllm-node:latest \
+        bash -c "ray start --head \
+        --node-ip-address={{ ray_head_ip }} \
+        --port={{ ray_port }} \
+        --dashboard-host=0.0.0.0 \
+        --num-gpus=1 \
+        --disable-usage-stats \
+        --block"
+      args:
+        executable: /bin/bash
+
+    - name: Start Ray Worker containers (on workers)
+      when: inventory_hostname in groups['workers']
+      shell: |
+        docker run -d --gpus all --network host --ipc=host \
+        -v /models:/models \
+        --name ray-worker-{{ inventory_hostname }} \
+        vllm-node:latest \
+        bash -c "ray start \
+        --node-ip-address=$(hostname -I | awk '{print $1}') \
+        --address={{ ray_head_ip }}:{{ ray_port }} \
+        --num-gpus=1 \
+        --disable-usage-stats \
+        --block"
+      args:
+        executable: /bin/bash
+
+    - name: Pause to allow cluster to form
+      pause:
+        seconds: 15
+
+    - name: Check cluster status (only on bastion)
+      when: inventory_hostname in groups['bastion']
+      shell: docker exec -it ray-head ray status
+      register: ray_output
+      args:
+        executable: /bin/bash
+
+    - name: Show cluster status
+      when: inventory_hostname in groups['bastion']
+      debug:
+        msg: "{{ ray_output.stdout }}"

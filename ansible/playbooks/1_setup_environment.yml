@@ -1,0 +1,139 @@
+---
+- name: Setup base environment for LLM cluster
+  hosts: all
+  become: yes
+  vars_files:
+    - all.yml
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install core dependencies
+      apt:
+        name:
+          - git
+          - wget
+          - curl
+          - python3
+          - python3-pip
+          - python3-venv
+          - git-lfs
+          - pipx
+          - ca-certificates
+          - software-properties-common
+        state: present
+
+    - name: Ensure pipx path configured
+      shell: pipx ensurepath
+      args:
+        executable: /bin/bash
+
+    - name: Enable git-lfs
+      shell: git lfs install
+      args:
+        executable: /bin/bash
+
+    # ---- Docker ----
+    - name: Add Docker GPG key
+      shell: |
+        install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        chmod a+r /etc/apt/keyrings/docker.asc
+      args:
+        executable: /bin/bash
+
+    - name: Add Docker repository
+      shell: |
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+        https://download.docker.com/linux/ubuntu \
+        $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
+        | tee /etc/apt/sources.list.d/docker.list > /dev/null
+      args:
+        executable: /bin/bash
+
+    - name: Update apt cache after adding Docker repo
+      apt:
+        update_cache: yes
+
+    - name: Install Docker CE
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Ensure docker service running
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    # ---- NVIDIA Drivers + CUDA ----
+    - name: Add NVIDIA package repository
+      shell: |
+        distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+        curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+        curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+      args:
+        executable: /bin/bash
+
+    - name: Install NVIDIA driver and nvidia-docker2
+      apt:
+        name:
+          - nvidia-driver-535
+          - nvidia-docker2
+        state: present
+      notify:
+        - Restart Docker
+
+    - name: Test NVIDIA docker runtime
+      shell: docker run --rm --gpus all nvidia/cuda:{{ cuda_version }}-base nvidia-smi
+      register: nvidia_test
+      ignore_errors: true
+
+    - debug:
+        msg: "{{ nvidia_test.stdout }}"
+
+    # ---- Model storage ----
+    - name: Create model directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+      loop:
+        - /models
+        - /models/models
+        - /models/hf-cache
+
+    # ---- HuggingFace CLI via pipx ----
+    - name: Create huggingface venv
+      become: no
+      shell: python3 -m venv ~/hf-venv
+      args:
+        executable: /bin/bash
+
+    - name: Install huggingface_hub in venv
+      become: no
+      shell: |
+        ~/hf-venv/bin/pip install --upgrade pip
+        ~/hf-venv/bin/pip install "huggingface_hub[cli]"
+      args:
+        executable: /bin/bash
+
+    - name: HuggingFace Authentication (non-interactive)
+      become: no
+      shell: ~/hf-venv/bin/hf auth login --token "{{ hf_token }}"
+      args:
+        executable: /bin/bash
+
+  handlers:
+    - name: Restart Docker
+      systemd:
+        name: docker
+        state: restarted

@@ -1,0 +1,36 @@
+# Base CUDA image
+FROM nvidia/cuda:12.1.1-devel-ubuntu22.04
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    python3 python3-pip git git-lfs \
+    openssh-client openssh-server \
+    && ln -s /usr/bin/python3 /usr/bin/python \
+    && apt-get clean
+
+RUN git lfs install
+
+# PyTorch + vLLM + Ray
+RUN pip install torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cu121
+RUN pip install "vllm==0.6.3.post1"
+RUN pip install "ray[default]==2.9.3"
+
+# Transformers + FastAPI
+RUN pip install transformers accelerate sentencepiece uvicorn fastapi
+RUN pip uninstall -y outlines pyairports || true
+RUN pip install outlines==0.0.37
+
+# Environment variables
+ENV VLLM_USE_TRITON_FLASH_ATTN=0
+ENV VLLM_USE_FLASHINFER=0
+ENV NCCL_P2P_DISABLE=0
+ENV NCCL_IB_DISABLE=1
+
+# Model cache
+RUN mkdir -p /models/hf-cache /models/models
+ENV HF_HOME=/models/hf-cache
+ENV HUGGINGFACE_HUB_CACHE=/models/hf-cache
+ENV TRANSFORMERS_CACHE=/models/hf-cache
+
+WORKDIR /app
+CMD ["/bin/bash"]

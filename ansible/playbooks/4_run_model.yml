@@ -1,0 +1,96 @@
+---
+- name: Download model to ALL nodes
+  hosts: all
+  become: yes
+  vars_files:
+    - all.yml
+  vars:
+    model_dir_base: "/models/models"
+    hf_cache: "/models/hf-cache"
+  tasks:
+    - name: Ensure model directory exists
+      file:
+        path: "{{ model_dir_base }}/{{ model_id | regex_replace('.*/', '') }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+
+    - name: Download model from HuggingFace (non-root)
+      become: no
+      shell: |
+        /home/{{ ansible_user }}/hf-venv/bin/hf download "{{ model_id }}" \
+        --local-dir "{{ model_dir_base }}/{{ model_id | regex_replace('.*/', '') }}" \
+        --cache-dir "{{ hf_cache }}" \
+        --include="*"
+      args:
+        executable: /bin/bash
+
+- name: Start vLLM Model Server on BASTION (ray-head)
+  hosts: bastion
+  become: yes
+  vars_files:
+    - all.yml
+  vars:
+    model_name: "{{ model_id | regex_replace('.*/', '') }}"
+    model_dir: "{{ model_dir_base }}/{{ model_name }}"
+    api_port: 8000
+    ray_head_container: "ray-head"
+    tensor_parallel: "{{ groups['workers'] | length + 1 }}"
+  tasks:
+    - name: Stop any old running model server
+      shell: docker exec {{ ray_head_container }} pkill -f vllm.entrypoints.openai.api_server || true
+      ignore_errors: true
+      args:
+        executable: /bin/bash
+
+    - name: Get public IP for API endpoint display
+      shell: "curl -s ifconfig.me"
+      register: public_ip
+      changed_when: false
+
+    - name: Start vLLM server with logging
+      shell: |
+        docker exec {{ ray_head_container }} bash -lc " nohup python3 -m vllm.entrypoints.openai.api_server \
+        --model {{ model_dir }} \
+        --tokenizer {{ model_dir }} \
+        --served-model-name {{ model_name }} \
+        --dtype float16 \
+        --tensor-parallel-size {{ tensor_parallel }} \
+        --distributed-executor-backend ray \
+        --host 0.0.0.0 \
+        --port {{ api_port }} \
+        --trust-remote-code \
+        --gpu-memory-utilization 0.82 \
+        --max-model-len 2048 \
+        --max-num-seqs 48 \
+        --max-num-batched-tokens 2048 \
+        > /var/log/vllm.log 2>&1 & "
+      args:
+        executable: /bin/bash
+
+    - name: WAIT a bit for model to start
+      pause:
+        seconds: 35
+
+    - name: Check if vLLM process is running
+      shell: "docker exec {{ ray_head_container }} pgrep -f vllm.entrypoints.openai.api_server"
+      register: vllm_ps
+      changed_when: false
+      failed_when: false
+
+    - name: FAIL if vLLM did not start
+      fail:
+        msg: |
+          A modell NEM indult el (vLLM process nincs futásban).
+          Valószínű ok: 1 GPU nem elegendő / túl alacsony VRAM / rossz modell-architektúra vLLM-hez.
+          Tipp: növeld a tensor parallel értékét (több node), vagy válts kisebb modellre.
+      when: vllm_ps.rc != 0
+
+    - name: Show access URL
+      debug:
+        msg: |
+          Modell sikeresen fut!
+          API endpoint: http://{{ public_ip.stdout }}:{{ api_port }}/v1/chat/completions
+          Log nézés: docker exec -it {{ ray_head_container }} bash tail -f /var/log/vllm.log
+      when: vllm_ps.rc == 0
